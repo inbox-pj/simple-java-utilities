@@ -1,9 +1,12 @@
 package com.clover.labs.java8.future;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
@@ -23,7 +26,9 @@ public class FutureAPIUtil {
         System.out.println("#\tallOf() \t\t\t\t-> " + allOf().get());
         System.out.println("#\thandleErrors(null) \t\t-> " + handleErrors(null).get());
         System.out.println("#\thandleErrors(World) \t-> " + handleErrors("World").get());
-        System.out.print("#\ttestPredicate() \t\t-> " + testPredicate());
+        System.out.println("#\ttestPredicate() \t\t-> " + testPredicate());
+        System.out.println("#\tanyMatch() \t\t\t\t-> " + anyMatch(true));
+        System.out.println("#\tanyMatch() \t\t\t\t-> " + anyMatch(false));
 
         System.out.println();
     }
@@ -88,9 +93,32 @@ public class FutureAPIUtil {
     }
 
     public static boolean testPredicate() {
-        Predicate<Task> isMerchantSurchargeEnabled = d -> Optional.ofNullable(d.getIsResponseReceived()).filter(r -> r != null).isPresent();
+        Predicate<Task> isResponseReceived = d -> Optional.ofNullable(d.getResponse()).filter(r -> r != null).isPresent();
 
-        return isMerchantSurchargeEnabled.test(new Task("a", "b", Boolean.FALSE));
+        return isResponseReceived.test(new Task("a", null, Boolean.FALSE));
+    }
+
+    public static boolean anyMatch(boolean isResponse) {
+        Task task1 = Task.builder()
+                .request("anyMatch - Request")
+                .response("anyMatch - Response")
+                .isResponseReceived(isResponse)
+                .build();
+        Task task2 = Task.builder()
+                .request("anyMatch - Request")
+                .response(!isResponse ? null : "anyMatch - Response")
+                .isResponseReceived(!isResponse)
+                .build();
+        List<Task> taskList = new ArrayList<>();
+        taskList.add(task1);
+        taskList.add(task2);
+
+        boolean isResponseReceived = Optional.ofNullable(taskList)
+                .map(tsl -> tsl.stream().anyMatch(
+                        ts -> ts.getIsResponseReceived() && ts.getResponse() != null
+                )).orElse(Boolean.FALSE);
+
+        return isResponseReceived;
     }
 }
 
@@ -98,6 +126,7 @@ public class FutureAPIUtil {
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
 class Task {
 
     private String request;
